@@ -25,6 +25,39 @@ lib/summary.js           HTML + Markdown + JSON report
 config/environments.json base URLs per environment, no secrets
 ```
 
+## Prerequisite: install k6 first
+
+The scenarios need the `k6` CLI. Verify it before anything else:
+
+```bash
+k6 version      # e.g. k6 v2.4.0
+```
+
+**Ubuntu / Debian** (official Grafana repo, needs `sudo`):
+
+```bash
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://dl.k6.io/key.gpg | sudo tee /etc/apt/keyrings/k6-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/etc/apt/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+sudo apt update && sudo apt install -y k6
+k6 version
+```
+
+**macOS:**
+
+```bash
+brew install k6
+```
+
+**Without sudo:** download the release binary for your arch into `~/.local/bin`
+and put that directory on `PATH`.
+
+`k6 version` only proves the binary runs. Run the smoke scenario once before a
+load test to confirm it actually generates traffic.
+
+> The official `grafana/k6` Docker image does **not** bundle the web dashboard,
+> and building `xk6-dashboard` needs Go 1.24+ (1.25+ for the builder).
+
 ## Install
 
 Copy the scenarios into your project:

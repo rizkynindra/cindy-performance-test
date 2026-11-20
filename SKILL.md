@@ -7,6 +7,59 @@ description: Build and run load, stress, spike and soak tests for a REST API wit
 
 Produce a real load test and a report, not just a script. Every test runs with a declared target, a declared load shape and a declared threshold; without those three the result is a number nobody can act on.
 
+## Prerequisites — install k6 first
+
+This skill drives the `k6` CLI. Nothing else in the skill works until k6 runs, so verify before promising a test:
+
+```bash
+k6 version          # must print a version, e.g. k6 v2.4.0
+```
+
+If it is missing, install it and confirm with `k6 version` before continuing. Do not write scenarios against an unverified install.
+
+### Ubuntu / Debian (official Grafana repo)
+
+Needs `sudo`. On a non-interactive session `sudo` may have no TTY for the password prompt — in that case give the user the commands to run themselves instead of guessing.
+
+```bash
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://dl.k6.io/key.gpg | sudo tee /etc/apt/keyrings/k6-archive-keyring.gpg >/dev/null
+echo "deb [signed-by=/etc/apt/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+sudo apt update && sudo apt install -y k6
+k6 version
+```
+
+There is no Homebrew on Ubuntu. Do not suggest `brew install k6` there.
+
+### macOS
+
+```bash
+brew install k6
+k6 version
+```
+
+Homebrew running under Rosetta installs an x86_64 k6, whose load generator is weaker. For serious measurement prefer the native arm64 binary from the k6 releases page.
+
+### No sudo / no package manager
+
+Download the release binary into `~/.local/bin` (native arch, no root):
+
+```bash
+# pick the linux_amd64 / linux_arm64 / darwin_* asset matching `uname -s -m`
+VER=$(curl -sL https://api.github.com/repos/grafana/k6/releases/latest | grep -oP '"tag_name": "v\K[^"]+')
+curl -sL "https://github.com/grafana/k6/releases/download/v${VER}/k6-v${VER}-linux-amd64.tar.gz" | tar xz
+mkdir -p ~/.local/bin && mv k6-v${VER}-linux-amd64/k6 ~/.local/bin/
+~/.local/bin/k6 version
+```
+
+`~/.local/bin` must be on `PATH`.
+
+### Verify the install actually generates load
+
+`k6 version` proves the binary runs, not that it can produce traffic. Run the smoke scenario from Step 5 before any load test: if it reports requests, the generator works.
+
+Docker is **not** a shortcut for the dashboard: the official `grafana/k6` image has no bundled web dashboard, and building `xk6-dashboard` requires Go 1.24+ (the extension) and 1.25+ (the builder). Do not promise an interactive report without checking those versions.
+
 ## Rules that come first
 
 1. **Never load-test production** unless the owner explicitly says so in this conversation, and even then keep it a smoke test. Ask for the staging or test URL. A load test is an action on someone else's running service.
