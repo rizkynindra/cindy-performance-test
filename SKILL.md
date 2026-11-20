@@ -54,11 +54,45 @@ mkdir -p ~/.local/bin && mv k6-v${VER}-linux-amd64/k6 ~/.local/bin/
 
 `~/.local/bin` must be on `PATH`.
 
+### Docker with the web dashboard (optional interactive report)
+
+The plain `grafana/k6` image has **no** dashboard. Use the `-with-browser` tag, which
+bundles `xk6-dashboard`:
+
+```bash
+# pin the tag to your k6 version; 2.4.0-with-browser ships k6 v2.4.0
+docker pull grafana/k6:2.4.0-with-browser
+
+docker run --rm --user "$(id -u):$(id -g)" --network host \
+  -v "$PWD:/scripts" -w /scripts \
+  -e K6_WEB_DASHBOARD=true \
+  -e K6_WEB_DASHBOARD_EXPORT=/scripts/perf/reports/report.html \
+  -e K6_WEB_DASHBOARD_PERIOD=1s \
+  -e K6_WEB_DASHBOARD_OPEN=false \
+  grafana/k6:2.4.0-with-browser run perf/scenarios/load.js
+```
+
+Things that fail silently and waste an afternoon:
+
+- **The dashboard flag is not in `--help`.** It exists and works; look for it in
+  `k6 version` or in the binary, not in the usage text. Do not conclude it is missing.
+- **A run shorter than ~5s exports no file.** The dashboard flushes on shutdown;
+  very short runs finish before the first write. Use a realistic duration.
+- `--user "$(id -u):$(id -g)"` keeps the report owned by you instead of root.
+- On a host where Docker Desktop is not running but `dockerd` is, export
+  `DOCKER_HOST=unix:///var/run/docker.sock` before the commands above.
+- Building `xk6-dashboard` yourself needs Go 1.24+ (1.25+ for the `xk6` builder).
+  Do not attempt it on an older toolchain — use the published image instead.
+
 ### Verify the install actually generates load
 
 `k6 version` proves the binary runs, not that it can produce traffic. Run the smoke scenario from Step 5 before any load test: if it reports requests, the generator works.
 
-Docker is **not** a shortcut for the dashboard: the official `grafana/k6` image has no bundled web dashboard, and building `xk6-dashboard` requires Go 1.24+ (the extension) and 1.25+ (the builder). Do not promise an interactive report without checking those versions.
+### Portability
+
+The scenarios import only `k6/http`, `k6`, `k6/crypto` and local files — there is no
+remote `jslib.k6.io` import. They therefore run on an offline or air-gapped test
+host. If you add a helper, keep it local for the same reason.
 
 ## Rules that come first
 
